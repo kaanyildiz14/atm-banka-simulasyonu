@@ -34,6 +34,10 @@ Ana ekrandaki **Para çekme, Para yatırma, Havale, EFT, QR ile işlem ve Destek
 
 Gereksinim: Java 17 veya üstü
 
+**Hızlı yol:** [Releases](https://github.com/kaanyildiz14/atm-banka-simulasyonu/releases/latest) sayfasından `atm-banka-simulasyonu.jar` dosyasını indirip çift tıklayın ya da `java -jar atm-banka-simulasyonu.jar` ile çalıştırın.
+
+**Kaynaktan derleme:**
+
 ```bash
 git clone https://github.com/kaanyildiz14/atm-banka-simulasyonu.git
 cd atm-banka-simulasyonu
