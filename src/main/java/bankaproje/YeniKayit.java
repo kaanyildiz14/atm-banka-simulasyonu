@@ -1,178 +1,132 @@
 package bankaproje;
 
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.sql.SQLException;
-import javax.swing.JTextField;
-import javax.swing.JButton;
-import java.awt.event.ActionListener;
 import java.util.Optional;
-import java.awt.event.ActionEvent;
-import java.awt.Color;
-import java.awt.Font;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import com.formdev.flatlaf.FlatClientProperties;
+
+/** Yeni hesap açma formu. */
 public class YeniKayit extends JFrame {
 
 	private static final long serialVersionUID = 1L;
-	private JPanel contentPane;
-	private JTextField tfhesapno;
-	private JTextField tfad;
-	private JTextField tfsoyad;
-	private JTextField tfbakiye;
-	private JTextField tfpinkodu;
-	private JTextField tfemail;
-	private JTextField tfsehir;
-	private JTextField tfadres;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					YeniKayit frame = new YeniKayit();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+	private final JTextField tfhesapno = alan("4-12 haneli");
+	private final JTextField tfad = alan(null);
+	private final JTextField tfsoyad = alan(null);
+	private final JTextField tfbakiye = alan("Örn. 1500,00");
+	private final JTextField tfpinkodu = alan("4 haneli");
+	private final JTextField tfemail = alan("ad@ornek.com");
+	private final JTextField tfsehir = alan(null);
+	private final JTextField tfadres = alan(null);
+
+	public YeniKayit() {
+		setTitle("MYO Bank · Yeni hesap");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setSize(620, 600);
+		setLocationRelativeTo(null);
+
+		JPanel zemin = new JPanel(new GridBagLayout());
+		zemin.setBackground(Tema.ZEMIN);
+		setContentPane(zemin);
+
+		JPanel kart = Tema.kart();
+		kart.setLayout(new BorderLayout(0, 20));
+
+		JPanel ust = new JPanel(new BorderLayout(0, 4));
+		ust.setOpaque(false);
+		ust.add(Tema.baslik("Yeni hesap açın", 6), BorderLayout.NORTH);
+		ust.add(Tema.aciklama("Bilgilerinizi girin; hesabınızla hemen giriş yapabilirsiniz."), BorderLayout.SOUTH);
+		kart.add(ust, BorderLayout.NORTH);
+
+		// İki sütunlu form: her satırda iki alan
+		JPanel form = new JPanel(new GridBagLayout());
+		form.setOpaque(false);
+		String[] etiketler = { "Hesap numarası", "PIN kodu", "Ad", "Soyad", "Açılış bakiyesi (TL)", "E-posta", "Şehir",
+				"Adres" };
+		JTextField[] alanlar = { tfhesapno, tfpinkodu, tfad, tfsoyad, tfbakiye, tfemail, tfsehir, tfadres };
+		GridBagConstraints g = new GridBagConstraints();
+		g.fill = GridBagConstraints.HORIZONTAL;
+		g.weightx = 1;
+		for (int i = 0; i < alanlar.length; i++) {
+			g.gridx = i % 2;
+			g.gridy = i / 2;
+			g.insets = new Insets(0, g.gridx == 0 ? 0 : 8, 14, g.gridx == 0 ? 8 : 0);
+			form.add(etiketli(etiketler[i], alanlar[i]), g);
+		}
+		JPanel formSarici = new JPanel(new BorderLayout());
+		formSarici.setOpaque(false);
+		formSarici.add(form, BorderLayout.NORTH); // alanlar başlığın hemen altından başlasın
+		kart.add(formSarici, BorderLayout.CENTER);
+
+		JButton btnVazgec = new JButton("Vazgeç");
+		JButton btnKayit = Tema.anaButon("Hesap aç");
+		getRootPane().setDefaultButton(btnKayit);
+		JPanel butonlar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+		butonlar.setOpaque(false);
+		butonlar.add(btnVazgec);
+		butonlar.add(btnKayit);
+		kart.add(butonlar, BorderLayout.SOUTH);
+		kart.setPreferredSize(new Dimension(520, kart.getPreferredSize().height));
+		zemin.add(kart);
+
+		btnVazgec.addActionListener(e -> girisEkraninaDon());
+		btnKayit.addActionListener(e -> {
+			Optional<String> hata = HesapDogrulama.dogrula(tfhesapno.getText(), tfad.getText(), tfsoyad.getText(),
+					tfbakiye.getText(), tfpinkodu.getText(), tfemail.getText(), tfsehir.getText(), tfadres.getText());
+			if (hata.isPresent()) {
+				JOptionPane.showMessageDialog(this, hata.get(), "Eksik ya da hatalı bilgi",
+						JOptionPane.WARNING_MESSAGE);
+				return;
+			}
+			Hesap hesap = new Hesap(tfhesapno.getText(), tfad.getText(), tfsoyad.getText(),
+					HesapDogrulama.bakiyeOku(tfbakiye.getText()).orElseThrow(), tfemail.getText(),
+					tfsehir.getText(), tfadres.getText());
+			try {
+				HesapDeposu.VARSAYILAN.hesapAc(hesap, tfpinkodu.getText());
+				JOptionPane.showMessageDialog(this, "Hesabınız açıldı. Şimdi giriş yapabilirsiniz.");
+				girisEkraninaDon();
+			} catch (HesapDeposu.HesapZatenVarException hataZatenVar) {
+				JOptionPane.showMessageDialog(this, hataZatenVar.getMessage());
+			} catch (SQLException hataSql) {
+				JOptionPane.showMessageDialog(this, "Veritabanı hatası: " + hataSql.getMessage());
 			}
 		});
 	}
-	/**
-	 * Create the frame.
-	 */
-	public YeniKayit() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 487, 373);
-		contentPane = new JPanel();
-		contentPane.setBackground(new Color(45, 21, 200));
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		setContentPane(contentPane);
-		contentPane.setLayout(null);
-		
-		JLabel lblNewLabel = new JLabel("Hesap No:      ");
-		lblNewLabel.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblNewLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblNewLabel.setBounds(105, 18, 113, 28);
-		contentPane.add(lblNewLabel);
-		
-		tfhesapno = new JTextField();
-		tfhesapno.setBounds(197, 19, 130, 26);
-		contentPane.add(tfhesapno);
-		tfhesapno.setColumns(10);
-		
-		JLabel lblAd = new JLabel("Ad:      ");
-		lblAd.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblAd.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblAd.setBounds(105, 47, 113, 28);
-		contentPane.add(lblAd);
-		
-		JLabel lblSoyad = new JLabel("Soyad:      ");
-		lblSoyad.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblSoyad.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblSoyad.setBounds(105, 75, 113, 28);
-		contentPane.add(lblSoyad);
-		
-		JLabel lblBakiye = new JLabel("Bakiye:      ");
-		lblBakiye.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblBakiye.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblBakiye.setBounds(105, 106, 113, 28);
-		contentPane.add(lblBakiye);
-		
-		JLabel lblPinkodu = new JLabel("Pinkodu:      ");
-		lblPinkodu.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblPinkodu.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblPinkodu.setBounds(105, 137, 113, 28);
-		contentPane.add(lblPinkodu);
-		
-		JLabel lblEmail = new JLabel("Email:      ");
-		lblEmail.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblEmail.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblEmail.setBounds(105, 167, 113, 28);
-		contentPane.add(lblEmail);
-		
-		JLabel lblSehir = new JLabel("Sehir:      ");
-		lblSehir.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblSehir.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblSehir.setBounds(105, 197, 113, 28);
-		contentPane.add(lblSehir);
-		
-		JLabel lblAdres = new JLabel("Adres:      ");
-		lblAdres.setFont(new Font("Arial Narrow", Font.BOLD | Font.ITALIC, 16));
-		lblAdres.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblAdres.setBounds(105, 227, 113, 28);
-		contentPane.add(lblAdres);
-		
-		tfad = new JTextField();
-		tfad.setColumns(10);
-		tfad.setBounds(197, 48, 130, 26);
-		contentPane.add(tfad);
-		
-		tfsoyad = new JTextField();
-		tfsoyad.setColumns(10);
-		tfsoyad.setBounds(197, 76, 130, 26);
-		contentPane.add(tfsoyad);
-		
-		tfbakiye = new JTextField();
-		tfbakiye.setColumns(10);
-		tfbakiye.setBounds(197, 107, 130, 26);
-		contentPane.add(tfbakiye);
-		
-		tfpinkodu = new JTextField();
-		tfpinkodu.setColumns(10);
-		tfpinkodu.setBounds(197, 138, 130, 26);
-		contentPane.add(tfpinkodu);
-		
-		tfemail = new JTextField();
-		tfemail.setColumns(10);
-		tfemail.setBounds(197, 168, 130, 26);
-		contentPane.add(tfemail);
-		
-		tfsehir = new JTextField();
-		tfsehir.setColumns(10);
-		tfsehir.setBounds(197, 198, 130, 26);
-		contentPane.add(tfsehir);
-		
-		tfadres = new JTextField();
-		tfadres.setColumns(10);
-		tfadres.setBounds(197, 228, 130, 26);
-		contentPane.add(tfadres);
-		
-		JButton btnNewButton = new JButton("Kayit");
-		btnNewButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-				Optional<String> hata = HesapDogrulama.dogrula(tfhesapno.getText(), tfad.getText(), tfsoyad.getText(),
-						tfbakiye.getText(), tfpinkodu.getText(), tfemail.getText(), tfsehir.getText(), tfadres.getText());
-				if (hata.isPresent()) {
-					JOptionPane.showMessageDialog(null, hata.get());
-					return;
-				}
-				Hesap hesap = new Hesap(tfhesapno.getText(), tfad.getText(), tfsoyad.getText(),
-						HesapDogrulama.bakiyeOku(tfbakiye.getText()).orElseThrow(), tfemail.getText(),
-						tfsehir.getText(), tfadres.getText());
-				try {
-					HesapDeposu.VARSAYILAN.hesapAc(hesap, tfpinkodu.getText());
-					JOptionPane.showMessageDialog(null, "Kayıt Başarılı");
-					ATM atm = new ATM();
-					dispose();
-					atm.setVisible(true);
-				} catch (HesapDeposu.HesapZatenVarException hataZatenVar) {
-					JOptionPane.showMessageDialog(null, hataZatenVar.getMessage());
-				} catch (SQLException hataSql) {
-					JOptionPane.showMessageDialog(null, "Veritabanı hatası: " + hataSql.getMessage());
-				}
-			}
-		});
-		btnNewButton.setBounds(197, 265, 117, 29);
-		contentPane.add(btnNewButton);
 
+	private void girisEkraninaDon() {
+		ATM atm = new ATM();
+		dispose();
+		atm.setVisible(true);
+	}
+
+	private static JTextField alan(String ipucu) {
+		JTextField alan = new JTextField();
+		if (ipucu != null) {
+			alan.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, ipucu);
+		}
+		return alan;
+	}
+
+	private static JComponent etiketli(String etiket, JComponent alan) {
+		JPanel p = new JPanel(new BorderLayout(0, 6));
+		p.setOpaque(false);
+		p.setBorder(BorderFactory.createEmptyBorder());
+		p.add(Tema.alanEtiketi(etiket), BorderLayout.NORTH);
+		p.add(alan, BorderLayout.CENTER);
+		return p;
 	}
 }

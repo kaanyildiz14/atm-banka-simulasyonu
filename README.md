@@ -6,7 +6,7 @@
 ![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven&logoColor=white)
 ![Lisans](https://img.shields.io/badge/lisans-MIT-green)
 
-Bir ATM'nin hesap açma ve giriş akışını canlandıran Java Swing masaüstü uygulaması. Hesaplar SQLite veritabanında tutulur.
+Bir ATM'nin hesap açma ve giriş akışını canlandıran Java Swing masaüstü uygulaması. Hesaplar SQLite veritabanında tutulur; arayüz [FlatLaf](https://www.formdev.com/flatlaf/) temasıyla modern bir bankacılık uygulaması görünümünde.
 
 | Giriş | Ana ekran | Yeni hesap |
 |---|---|---|
@@ -18,13 +18,13 @@ Bir ATM'nin hesap açma ve giriş akışını canlandıran Java Swing masaüstü
 
 - **Hesap açma:** Hesap no, ad, soyad, açılış bakiyesi, PIN, e-posta, şehir ve adres
 - **Doğrulama:** Boş alan, 4-12 haneli hesap numarası, 4 haneli PIN, geçerli bakiye (`1500,50` ya da `1500.50`) ve e-posta biçimi kontrolü; aynı hesap numarasıyla ikinci hesap açılamaz
-- **Giriş:** Hesap numarası ve PIN ile; PIN alanı yazarken gizlenir
-- **Ana ekran:** Hesap sahibinin adı ve hesap numarası, işlem menüsü
+- **Giriş:** Hesap numarası ve PIN ile; PIN yazarken gizlenir (göz simgesiyle gösterilebilir), Enter ile giriş
+- **Ana ekran:** Hesap sahibine selam, hesap numarası, Türk lirası biçiminde bakiye ve işlem menüsü
 - **Güvenlik:** Tüm sorgular `PreparedStatement` ile parametreli; SQL injection denemeleri testlerle doğrulanıyor
 
 ## 🚧 Geliştirilmekte
 
-Ana ekrandaki **Para Çekme, Para Yatırma, Havale, EFT, QR ile işlem ve Destek** butonları şimdilik arayüzde yer tutucudur. Planlanan geliştirmeler:
+Ana ekrandaki **Para çekme, Para yatırma, Havale, EFT, QR ile işlem ve Destek** kutucukları şimdilik "Yakında" olarak gösteriliyor. Planlanan geliştirmeler:
 
 - Para çekme / yatırma ve havale (bakiye kontrolü ve veritabanı transaction'ı ile)
 - İşlem geçmişi
@@ -56,6 +56,7 @@ java -jar target/atm-banka-simulasyonu.jar
 ```
 src/main/java/bankaproje/
 ├── ATM.java             # Giriş ekranı (uygulamanın başlangıcı)
+├── Tema.java            # Renkler, yazı tipi ve ortak bileşenler (FlatLaf)
 ├── ATManaekran.java     # Ana ekran / işlem menüsü
 ├── YeniKayit.java       # Yeni hesap formu
 ├── Hesap.java           # Hesap kaydı (record)
